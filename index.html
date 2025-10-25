@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OM1 Secure Memory Quiz</title>
+  <style>
+    :root {
+      --bg: #0f1724;
+      --accent: #3b82f6;
+      --muted: #94a3b8;
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; font-family: Inter, Arial, sans-serif; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #071226 0%, #071428 100%);
+      color: #e6eef8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container { width: min(900px, 95%); padding: 28px; border-radius: 10px; }
+    header h1 { margin: 0 0 6px; font-size: 1.6rem; }
+    .hidden { display: none; }
+    #quiz-area { background: rgba(255,255,255,0.03); padding: 18px; border-radius: 8px; }
+    #options { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .option {
+      padding: 12px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.04);
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.05);
+      transition: all 0.2s;
+    }
+    .option:hover { background: rgba(255,255,255,0.08); }
+    .option.selected { background: rgba(59,130,246,0.3); border-color: var(--accent); }
+    button {
+      background: var(--accent);
+      border: none;
+      color: white;
+      padding: 10px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .nav { margin-top: 14px; text-align: right; }
+    footer { margin-top: 14px; color: var(--muted); text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>OM1: Secure Memory Quiz</h1>
+      <p>Test your knowledge about context manipulation attacks and secure memory for web agents.</p>
+    </header>
+
+    <main id="quiz-area">
+      <div id="start-screen">
+        <button id="start-btn">Start Quiz</button>
+      </div>
+
+      <div id="quiz-screen" class="hidden">
+        <div id="question-count"></div>
+        <div id="question-text"></div>
+        <div id="options"></div>
+        <div class="nav">
+          <button id="next-btn">Next</button>
+        </div>
+      </div>
+
+      <div id="result-screen" class="hidden">
+        <h2>Your Score</h2>
+        <p id="score-text"></p>
+        <p id="feedback"></p>
+        <button id="restart-btn">Restart Quiz</button>
+      </div>
+    </main>
+
+    <footer>
+      <small>Questions based on SentientAGI research on secure web agents.</small>
+    </footer>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById('start-btn');
+    const startScreen = document.getElementById('start-screen');
+    const quizScreen = document.getElementById('quiz-screen');
+    const resultScreen = document.getElementById('result-screen');
+    const questionText = document.getElementById('question-text');
+    const optionsDiv = document.getElementById('options');
+    const nextBtn = document.getElementById('next-btn');
+    const restartBtn = document.getElementById('restart-btn');
+    const questionCount = document.getElementById('question-count');
+    const scoreText = document.getElementById('score-text');
+    const feedback = document.getElementById('feedback');
+
+    const questions = [
+      { q: "What is a context manipulation attack?", opts: ["Prompt rewriting", "Tampering with stored memory context", "Intercepting API calls", "Overwriting model weights"], answer: 1 },
+      { q: "Why do web agents rely on memory storage?", opts: ["To store chat logs", "To maintain task context across steps", "To reduce compute load", "To personalize the UI"], answer: 1 },
+      { q: "Where is most agent memory stored today?", opts: ["On-chain", "Client-side or by third parties", "Central servers", "Encrypted HSMs"], answer: 1 },
+      { q: "What major risk does client-side memory introduce?", opts: ["Data redundancy", "Loss of context", "Tampering by malicious actors", "Slow retrieval"], answer: 2 },
+      { q: "What is CrAIBench?", opts: ["An AI model", "A benchmark for financial agents", "A crypto wallet", "A dataset for browsers"], answer: 1 },
+      { q: "What was the real-world threat demonstrated in Web3?", opts: ["Unauthorized crypto transfers", "Server downtime", "Memory overflow", "Slow queries"], answer: 0 },
+      { q: "What was the success rate of plan injection attacks even with defenses?", opts: ["5%", "25%", "46%-63%", "90%"], answer: 2 },
+      { q: "Which two defenses are recommended?", opts: ["Prompt filtering & word blocks", "Semantic integrity checks & memory isolation", "Captcha & token limits", "Cloud firewall"], answer: 1 },
+      { q: "Why are prompt-only defenses insufficient?", opts: ["They’re too slow", "They ignore stored plan manipulation", "They reduce accuracy", "They increase latency"], answer: 1 },
+      { q: "What’s the main takeaway from the research?", opts: ["Prompt filtering works", "Agents must secure their memory layer", "Attacks are harmless", "Use bigger LLMs"], answer: 1 }
+    ];
+
+    let current = 0;
+    let score = 0;
+    let selected = null;
+
+    function showQuestion(i) {
+      const q = questions[i];
+      questionCount.textContent = `Question ${i+1} of ${questions.length}`;
+      questionText.textContent = q.q;
+      optionsDiv.innerHTML = '';
+      q.opts.forEach((opt, idx) => {
+        const btn = document.createElement('div');
+        btn.className = 'option';
+        btn.textContent = opt;
+        btn.onclick = () => {
+          document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+          btn.classList.add('selected');
+          selected = idx;
+        };
+        optionsDiv.appendChild(btn);
+      });
+    }
+
+    function showResult() {
+      quizScreen.classList.add('hidden');
+      resultScreen.classList.remove('hidden');
+      scoreText.textContent = `${score} / ${questions.length}`;
+      if (score === questions.length) feedback.textContent = "Perfect! You understand secure memory like a pro!";
+      else if (score > questions.length * 0.7) feedback.textContent = "Great job! You're well-informed about agent security.";
+      else if (score > questions.length * 0.4) feedback.textContent = "Not bad! But review context manipulation risks again.";
+      else feedback.textContent = "Keep learning — web agents need secure memory!";
+    }
+
+    nextBtn.onclick = () => {
+      if (selected === null) {
+        alert('Please select an answer before continuing.');
+        return;
+      }
+      if (selected === questions[current].answer) score++;
+      current++;
+      selected = null;
+      if (current >= questions.length) showResult();
+      else showQuestion(current);
+    };
+
+    restartBtn.onclick = () => {
+      current = 0; score = 0; selected = null;
+      resultScreen.classList.add('hidden');
+      startScreen.classList.remove('hidden');
+    };
+
+    startBtn.onclick = () => {
+      startScreen.classList.add('hidden');
+      quizScreen.classList.remove('hidden');
+      showQuestion(0);
+    };
+  </script>
+</body>
+</html>
